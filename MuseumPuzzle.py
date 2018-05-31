@@ -27,8 +27,10 @@ COLORS = [WHITE, BLUE, YELLOW, GREEN, RED, BLACK]
 
 bg = "Mondrian-I-Pi.png"
 bgimg = pygame.image.load(bg)
-vic = "Mondrian-Map.png"
+vic = "Constellations.jpg"
 vicimg = pygame.image.load(vic)
+pws = "Password-Screen.jpg"
+pwsimg = pygame.image.load(pws)
 rects = []
 resets = []
 mondrians = []
@@ -40,13 +42,35 @@ yellows = [2, 8, 23, 26, 31, 36]
 changed = False
 win = False
 cheatFlag = False
+solution = "design"
+password = ""
+censor = ""
+
+def main():
+    global FPSCLOCK, DISPLAYSURF
+    global cheatFlag, win, changed
+    global mondrians, resetMondrians
+    pygame.init()
+    FPSCLOCK = pygame.time.Clock()
+    DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), pygame.FULLSCREEN)
+
+    mousex = 0
+    mousey = 0
+    pygame.display.set_caption('Museum Puzzle')
+    drawRects()
+    
+    while True:
+        passwordScreen()
+        runGame()
+
 
 class Mondrian:
     
     def __init__(self, rect, num, sol = None):
         self.rect = rect
         self.num = num
-        self.counter = random.randint(0, len(COLORS) - 2)
+        self.counter = 0
+        #self.counter = random.randint(0, len(COLORS) - 2)
         
         if sol is None:
             self.sol = 0
@@ -71,7 +95,8 @@ class Mondrian:
         return self.sol
 
     def randomizeColor(self):
-        self.counter = random.randint(0, len(COLORS) - 2)
+        self.counter = 0
+        #self.counter = random.randint(0, len(COLORS) - 2)
     
     def getColor(self):
         return COLORS[self.counter]
@@ -103,14 +128,14 @@ def checkWin():
     return True
 
 def resetCheck(moux, mouy):
+    correct = True
     for i in resetMondrians:
         if i.rect.collidepoint(moux, mouy):
             i.setCorrect(True)
             #i.changeColor()
-    if resetMondrians[0].getCorrect() and resetMondrians[1].getCorrect() and resetMondrians[2].getCorrect() and resetMondrians[3].getCorrect():
-        return True
-    else:
-        return False
+        if not i.getCorrect():
+            correct = False
+    return correct
 
 def reset():
     global win, cheatFlag, changed
@@ -118,7 +143,7 @@ def reset():
     cheatFlag = False
     changed = False
     
-    DISPLAYSURF.blit(bgimg, (0, 0))
+    #DISPLAYSURF.blit(bgimg, (0, 0))
 
     for y in mondrians:
         y.randomizeColor()
@@ -127,21 +152,11 @@ def reset():
     for i in resetMondrians:
         i.setCorrect(False)
     
-    pygame.display.update()
+    #pygame.display.update()
 
-def main():
-    global FPSCLOCK, DISPLAYSURF
-    global cheatFlag, win, changed
+def drawRects():
     global mondrians, resetMondrians
-    pygame.init()
-    FPSCLOCK = pygame.time.Clock()
-    DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), pygame.FULLSCREEN)
-
-    mousex = 0
-    mousey = 0
-    pygame.display.set_caption('Museum Puzzle')
-
-    DISPLAYSURF.blit(bgimg, (0, 0))
+    global FPSCLOCK, DISPLAYSURF
     
     #Column 1
     Rect0 = pygame.Rect(0 + BORDERTHICK, 0 + BORDERTHICK, 43 - LINETHICK, 185 - LINETHICK)
@@ -193,12 +208,12 @@ def main():
     #Column 10
     Rect38 = pygame.Rect(43 + 119 + 136 + 299 + 43 + BORDERTHICK, 0 + BORDERTHICK, 39 - LINETHICK, 330 - LINETHICK)
 
-    Reset0 = pygame.Rect(71, 135, 54, 47)
-    Reset1 = pygame.Rect(126, 182, 55, 49)
-    Reset2 = pygame.Rect(181, 231, 57, 49)
-    Reset3 = pygame.Rect(238, 280, 57, 49)
+    Reset0 = pygame.Rect(0, 0, 60, 60)
+    Reset1 = pygame.Rect(620, 620, 60, 60)
+    #Reset2 = pygame.Rect(181, 231, 57, 49)
+    #Reset3 = pygame.Rect(238, 280, 57, 49)
 
-    resets = [Reset0, Reset1, Reset2, Reset3]
+    resets = [Reset0, Reset1]
     
     rects = [Rect0, Rect1, Rect2, Rect3, Rect4, Rect5, Rect6, Rect7, Rect8, Rect9, Rect10,
              Rect11, Rect12, Rect13, Rect14, Rect15, Rect16, Rect17, Rect18, Rect19, Rect20,
@@ -225,10 +240,51 @@ def main():
 
     for a in range(0, len(resets)):
         resetMondrians.append(Mondrian(resets[a], a))
+        resetMondrians[a].setCorrect(False)
+        #resetMondrians[a].changeColor()
     
+def passwordScreen():
+    global DISPLAYSURF, solution, password, censor
+    prompt = "Please type in password:"
+    font = pygame.font.Font(None, 50)
+    while True:
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.unicode.isalpha():
+                    password += event.unicode
+                    censor += '*'
+                elif event.key == K_BACKSPACE:
+                    password = password[:-1]
+                    censor = censor[:-1]
+                elif event.key == K_RETURN:
+                    if password == solution:
+                        password = ""
+                        censor = ""
+                        return
+            if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):		
+                pygame.quit()		
+                sys.exit()	
+        #DISPLAYSURF.fill((255, 255, 255))
+        promptblock = font.render(prompt, True, (0, 0, 0))
+        block = font.render(censor, True, (0, 0, 0))
+        rect = block.get_rect()
+        rect.center = DISPLAYSURF.get_rect().center
+        promptrect = promptblock.get_rect()
+        promptrect.center = (rect.centerx - 20, rect.centery - 50)
+        rect.center = (rect.centerx, rect.centery + 50)
+        DISPLAYSURF.blit(pwsimg, (-60, -50))
+        #DISPLAYSURF.blit(promptblock, promptrect)
+        DISPLAYSURF.blit(block, rect)
+        pygame.display.flip()
+
+def runGame():
+    global FPSCLOCK, DISPLAYSURF
+    global cheatFlag, win, changed
+    global mondrians, resetMondrians
+    
+    DISPLAYSURF.blit(bgimg, (0, 0))
     for y in mondrians:
         pygame.draw.rect(DISPLAYSURF, y.getColor(), y.rect)
-    
     pygame.display.update()
 
     while True:
@@ -254,18 +310,19 @@ def main():
                 resetFlag = resetCheck(mousex, mousey)
                 if resetFlag:
                     reset()
-        
-        if changed:
-            pygame.draw.rect(DISPLAYSURF, changedMondrian.getColor(), changedMondrian.rect)
-            changed = False
-        
-        if checkWin() or cheatFlag:
-            for i in resetMondrians:
-                pygame.draw.rect(DISPLAYSURF, i.getColor(), i.rect)
-            DISPLAYSURF.blit(vicimg, (0, 0))
-            win = True
+                    return
+            
+            if changed:
+                pygame.draw.rect(DISPLAYSURF, changedMondrian.getColor(), changedMondrian.rect)
+                changed = False
+            
+            if checkWin() or cheatFlag:
+                for i in resetMondrians:
+                    pygame.draw.rect(DISPLAYSURF, i.getColor(), i.rect)
+                DISPLAYSURF.blit(vicimg, (0, -20))
+                win = True
 
-        pygame.display.update()
-                
+            pygame.display.update()
+        
 if __name__ == '__main__':
     main()
